@@ -26,6 +26,14 @@ class MovieViewModel : ViewModel() {
 
         }
     }
+     fun searchMovies(query: String) {
+        viewModelScope.launch {
+            val jsonString = withContext(Dispatchers.IO) {
+                movieApiService.searchMovies(query) // Runs on IO thread
+            }
+            _movies.postValue(parseMovies(jsonString)) // Updates UI on the main thread
+        }
+    }
 
     private fun parseMovies(jsonString: String): List<Movie> {
         return try {
@@ -49,4 +57,5 @@ class MovieViewModel : ViewModel() {
     fun onPopularClicked() {
         fetchPopularMovies()
     }
+
 }

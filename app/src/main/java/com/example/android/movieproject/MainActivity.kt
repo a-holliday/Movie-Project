@@ -16,17 +16,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -58,25 +66,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-    @Composable
-    fun MovieAppNavHost(navController: NavHostController, viewModel: MovieViewModel) {
-        NavHost(navController = navController, startDestination = "landing") {
-            composable("landing") {
-                MovieLandingScreen(
-                    onPopularClick = {
-                        navController.navigate("popular")
-                        viewModel.onPopularClicked()
-                    },
-                    onSearchClick = { /* Do nothing for now */ }
-                )
-            }
-            composable("popular") {
-                PopularMovies(viewModel)
-            }
-        }
-    }
-
     @Composable
     fun MovieLandingScreen(onPopularClick: () -> Unit, onSearchClick: () -> Unit) {
         Column(
@@ -98,6 +87,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+
+    @Composable
+    fun MovieAppNavHost(navController: NavHostController, viewModel: MovieViewModel) {
+        NavHost(navController = navController, startDestination = "landing") {
+            composable("landing") {
+                MovieLandingScreen(
+                    onPopularClick = {
+                        navController.navigate("popular")
+                        viewModel.onPopularClicked()
+                    },
+                    onSearchClick = {
+                        navController.navigate("searchLanding")
+                    }
+                )
+            }
+            composable("popular") {
+                PopularMovies(viewModel)
+            }
+            composable("searchLanding"){
+                SearchScreen(viewModel)
+            }
+
+        }
+    }
+
+
     @Composable
     fun PopularMovies(viewModel: MovieViewModel) {
         val movies = viewModel.movies.observeAsState(emptyList()).value
@@ -110,7 +126,9 @@ class MainActivity : ComponentActivity() {
                 MovieItem(movie)
             }
         }
-    }    @Composable
+    }
+
+    @Composable
     fun MovieItem(movie: Movie) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -118,13 +136,51 @@ class MainActivity : ComponentActivity() {
 
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = movie.title, style = MaterialTheme.typography.titleLarge)
+                Text(text = movie.title.toString(), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = movie.overview,
+                    text = movie.overview.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 3
                 )
             }
         }
     }
+
+
+    @Composable
+    fun SearchScreen(viewModel: MovieViewModel) {
+        var query by remember { mutableStateOf("") }
+        val movies = viewModel.movies.observeAsState(emptyList()).value
+
+
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Search movies, shows...") },
+                singleLine = true,
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        viewModel.searchMovies(query) //
+                        defaultKeyboardAction(ImeAction.Search)
+                    }
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn {
+                items(movies) { movie ->
+                    MovieItem(movie)
+                }
+            }
+        }
+    }
+
+
 }
+
+
+
