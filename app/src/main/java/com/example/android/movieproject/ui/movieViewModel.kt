@@ -16,6 +16,7 @@ class MovieViewModel : ViewModel() {
 
     private val _movies = MutableLiveData<List<Movie>>()
     val movies: LiveData<List<Movie>> = _movies  // Expose immutable LiveData
+    var movie : Movie? = null// Placeholder for a single movie
 
     private fun fetchPopularMovies() {
         viewModelScope.launch {
@@ -56,6 +57,12 @@ class MovieViewModel : ViewModel() {
 
     fun onPopularClicked() {
         fetchPopularMovies()
+    }
+
+    fun getMovie(movieId : Int?) {
+        movie = movies.value?.firstOrNull { it.id == movieId }
+
+
     }
 
 }

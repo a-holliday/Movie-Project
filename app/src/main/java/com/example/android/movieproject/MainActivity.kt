@@ -22,10 +22,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,6 +44,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil3.compose.AsyncImage
 import com.example.android.movieproject.data.Movie
 import com.example.android.movieproject.ui.MovieViewModel
 import com.google.gson.Gson
@@ -58,7 +62,8 @@ class MainActivity : ComponentActivity() {
             MaterialTheme { // Apply your app's theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = darkColorScheme().background,
+                    contentColor = darkColorScheme().onBackground
                 ) {
                     MovieAppNavHost(navController, viewModel)
                 }
@@ -104,10 +109,22 @@ class MainActivity : ComponentActivity() {
                 )
             }
             composable("popular") {
-                PopularMovies(viewModel)
+                PopularMovies(viewModel){
+                    viewModel.getMovie(it.id)
+                    navController.navigate("movieDetail")
+                }
+
             }
             composable("searchLanding"){
-                SearchScreen(viewModel)
+                SearchScreen(viewModel
+                , onMovieItemClicked = {
+                    viewModel.getMovie(it.id)
+                    navController.navigate("movieDetail")}
+                )
+
+            }
+            composable("movieDetail"){
+                MovieDetailScreen(viewModel)
             }
 
         }
@@ -115,7 +132,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun PopularMovies(viewModel: MovieViewModel) {
+    fun PopularMovies(viewModel: MovieViewModel, onMovieItemClicked: (Movie) -> Unit) {
         val movies = viewModel.movies.observeAsState(emptyList()).value
 
         LazyColumn(
@@ -123,18 +140,20 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(movies) { movie ->
-                MovieItem(movie)
+                MovieItem(movie, movieItemClicked = { onMovieItemClicked(movie)})
             }
         }
     }
 
     @Composable
-    fun MovieItem(movie: Movie) {
+    fun MovieItem(movie: Movie, movieItemClicked : (Movie) -> Unit) {
         Card(
+            onClick = { movieItemClicked(movie) },
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            colors = cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
 
-        ) {
+            ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = movie.title.toString(), style = MaterialTheme.typography.titleLarge)
                 Text(
@@ -148,7 +167,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun SearchScreen(viewModel: MovieViewModel) {
+    fun SearchScreen(viewModel: MovieViewModel, onMovieItemClicked: (Movie) -> Unit) {
         var query by remember { mutableStateOf("") }
         val movies = viewModel.movies.observeAsState(emptyList()).value
 
@@ -173,14 +192,41 @@ class MainActivity : ComponentActivity() {
 
             LazyColumn {
                 items(movies) { movie ->
-                    MovieItem(movie)
+                    MovieItem(movie, movieItemClicked = onMovieItemClicked)
                 }
             }
         }
     }
 
+    @Composable
+    fun MovieDetailScreen(viewModel: MovieViewModel){
+        val movie = viewModel.movie
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(40.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            movie?.let{
+                AsyncImage(
+                    model = "https://image.tmdb.org/t/p/w500${it.poster_path}",
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+            Text(text = movie?.title.toString(), style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = movie?.overview.toString(), style = MaterialTheme.typography.bodyMedium)
+
+        }
+
+    }
+
 
 }
-
 
 
